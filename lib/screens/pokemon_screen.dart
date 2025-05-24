@@ -87,7 +87,9 @@ class _PokemonScreenState extends State<PokemonScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PokemonDetailScreen(),
+                          builder:
+                              (context) =>
+                                  PokemonDetailScreen(pokemonUrl: pokemon.url),
                         ),
                       );
                     },
