@@ -57,7 +57,7 @@ class _PokemonDetailScreenState extends State<PokemonDetailScreen> {
                   width: 200,
                   height: 200,
                   repeat: true,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               )
               : _error != null

@@ -14,7 +14,10 @@ class PokemonScreen extends StatefulWidget {
 class _PokemonScreenState extends State<PokemonScreen> {
   List<PokemonModel> _pokemonList = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _error;
+  String? _nextUrl;
+  int _offset = 0;
 
   @override
   void initState() {
@@ -22,17 +25,42 @@ class _PokemonScreenState extends State<PokemonScreen> {
     _fetchPokemons();
   }
 
-  Future<void> _fetchPokemons() async {
+  Future<void> _fetchPokemons({bool loadMore = false}) async {
+    if (_isLoadingMore) return;
+
     try {
-      final List<PokemonModel> pokemons = await fetchPokemonList();
+      if (loadMore) {
+        setState(() {
+          _isLoadingMore = true;
+        });
+      } else {
+        setState(() {
+          _isLoading = true;
+        });
+      }
+
+      final Map<String, dynamic> result = await fetchPokemonList(
+        offset: _offset,
+      );
+      final List<PokemonModel> newPokemons = result['pokemonList'];
+      final String? nextUrl = result['nextUrl'];
+
       setState(() {
-        _pokemonList = pokemons;
+        if (loadMore) {
+          _pokemonList.addAll(newPokemons);
+        } else {
+          _pokemonList = newPokemons;
+        }
+        _nextUrl = nextUrl;
+        _offset += 20;
         _isLoading = false;
+        _isLoadingMore = false;
       });
     } catch (e) {
       setState(() {
         _error = e.toString();
         _isLoading = false;
+        _isLoadingMore = false;
       });
     }
   }
@@ -53,7 +81,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
                   width: 200,
                   height: 200,
                   repeat: true,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               )
               : _error != null
@@ -64,37 +92,63 @@ class _PokemonScreenState extends State<PokemonScreen> {
                   style: TextStyle(color: Colors.red, fontSize: 16),
                 ),
               )
-              : ListView.builder(
-                itemCount: _pokemonList.length,
-                itemBuilder: (context, index) {
-                  final pokemon = _pokemonList[index];
-                  return ListTile(
-                    leading: Text(
-                      '${index + 1}.',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+              : Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount:
+                          _pokemonList.length + (_nextUrl != null ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (_nextUrl != null && index == _pokemonList.length) {
+                          return Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: ElevatedButton(
+                              onPressed: () => _fetchPokemons(loadMore: true),
+                              child:
+                                  _isLoadingMore
+                                      ? SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                      : Text('Загрузить ещё'),
+                            ),
+                          );
+                        }
+                        final pokemon = _pokemonList[index];
+                        return ListTile(
+                          leading: Text(
+                            '${index + 1}.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          title: Text(
+                            pokemon.name.toUpperCase(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => PokemonDetailScreen(
+                                      pokemonUrl: pokemon.url,
+                                    ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
-                    title: Text(
-                      pokemon.name.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  PokemonDetailScreen(pokemonUrl: pokemon.url),
-                        ),
-                      );
-                    },
-                  );
-                },
+                  ),
+                ],
               ),
     );
   }

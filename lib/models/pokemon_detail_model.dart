@@ -27,7 +27,7 @@ class PokemonDetailModel {
 
     return PokemonDetailModel(
       name: json['name'] as String,
-      imageUrl: json['sprites']['from_default'] as String,
+      imageUrl: json['sprites']['front_default'] as String,
       height: json['height'] as int,
       weight: json['weight'] as int,
       types: types,
